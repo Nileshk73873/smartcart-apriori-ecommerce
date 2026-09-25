@@ -1,0 +1,31 @@
+# Virtual environments
+venv/
+.env/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+build/
+
+# Database
+backend/ecommerce.db
+*.sqlite
+*.sqlite3
+
+# Ignore prompts
+prompt.md
+prompt2.md
+
+# Large dataset files (optional but recommended for git)
+# Uncomment if you don't want to push the 40MB csv
+# data/raw/online_retail_II.csv
+# data/processed/cleaned_retail.csv
