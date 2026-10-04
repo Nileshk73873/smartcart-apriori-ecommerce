@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Cart() {
@@ -12,12 +11,12 @@ export default function Cart() {
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get(`${API_URL}/cart/`)
+      const res = await api.get('/cart/')
       setCart(res.data)
       
       if (res.data.items.length > 0) {
         const itemIds = res.data.items.map(i => i.product.id)
-        const recsRes = await axios.post(`${API_URL}/cart/recommendations`, itemIds)
+        const recsRes = await api.post('/cart/recommendations', itemIds)
         setCartRecs(recsRes.data)
       } else {
         setCartRecs([])
@@ -34,7 +33,7 @@ export default function Cart() {
   const updateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return removeItem(productId)
     try {
-      await axios.put(`${API_URL}/cart/update`, { product_id: productId, quantity: newQuantity })
+      await api.put('/cart/update', { product_id: productId, quantity: newQuantity })
       fetchCart()
       fetchCartCount()
     } catch (err) {
@@ -44,7 +43,7 @@ export default function Cart() {
 
   const removeItem = async (productId) => {
     try {
-      await axios.delete(`${API_URL}/cart/remove/${productId}`)
+      await api.delete(`/cart/remove/${productId}`)
       fetchCart()
       fetchCartCount()
     } catch (err) {
@@ -54,7 +53,7 @@ export default function Cart() {
 
   const addToCart = async (productId) => {
     try {
-      await axios.post(`${API_URL}/cart/add`, { product_id: productId, quantity: 1 })
+      await api.post('/cart/add', { product_id: productId, quantity: 1 })
       fetchCart()
       fetchCartCount()
     } catch (err) {
@@ -127,22 +126,48 @@ export default function Cart() {
 
           {/* Cart Recommendations section */}
           {cartRecs.length > 0 && (
-            <div className="bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4">Customers who bought items in your cart also bought</h2>
+            <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Recommended for your Cart</h2>
+                  <p className="text-xs text-gray-500">Apriori data-mined co-purchase affinity &amp; bundle items</p>
+                </div>
+                {cart.discount === 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full font-medium">
+                    ⚡ Add bundle items below to unlock up to 15% discount
+                  </span>
+                )}
+              </div>
+
               <div className="flex gap-4 overflow-x-auto pb-4">
                 {cartRecs.map((rec, idx) => (
-                  <div key={idx} className="w-48 flex-shrink-0 flex flex-col items-start gap-2 border p-2 hover:shadow-sm">
-                    <Link to={`/products/${rec.product.id}`}>
-                      <img src={rec.product.image_url} className="w-full h-32 object-contain" alt={rec.product.name} />
+                  <div key={idx} className="w-52 flex-shrink-0 flex flex-col items-start gap-2 border border-gray-200 rounded p-3 hover:shadow-md transition-shadow bg-white">
+                    <Link to={`/products/${rec.product.id}`} className="w-full flex justify-center bg-gray-50 rounded p-2">
+                      <img
+                        src={rec.product.image_url || rec.product.image}
+                        className="w-full h-32 object-contain"
+                        alt={rec.product.name}
+                      />
                     </Link>
-                    <Link to={`/products/${rec.product.id}`} className="text-sm text-blue-600 hover:underline hover:text-orange-600 line-clamp-2">
+                    <Link
+                      to={`/products/${rec.product.id}`}
+                      className="text-sm font-medium text-blue-600 hover:underline hover:text-orange-600 line-clamp-2"
+                    >
                       {rec.product.name}
                     </Link>
-                    <div className="text-[#B12704] font-bold">£{rec.product.price.toFixed(2)}</div>
-                    
+
+                    <div className="flex items-center gap-2 mt-auto">
+                      <div className="text-[#B12704] font-bold text-base">£{rec.product.price.toFixed(2)}</div>
+                      {rec.lift && rec.lift > 1 && (
+                        <span className="text-[10px] bg-green-100 text-green-800 font-semibold px-1.5 py-0.5 rounded">
+                          {rec.lift.toFixed(1)}x Lift
+                        </span>
+                      )}
+                    </div>
+
                     <button 
                       onClick={() => addToCart(rec.product.id)} 
-                      className="mt-auto bg-[#FFD814] hover:bg-[#F7CA00] border-[#FCD200] border rounded-full py-1 px-4 text-xs shadow-sm font-medium w-full"
+                      className="mt-2 bg-[#FFD814] hover:bg-[#F7CA00] border-[#FCD200] border rounded-full py-1.5 px-4 text-xs shadow-sm font-medium w-full transition-colors cursor-pointer"
                     >
                       Add to Cart
                     </button>
@@ -156,34 +181,41 @@ export default function Cart() {
         {/* Right Side: Checkout Box */}
         {cart.items.length > 0 && (
           <div className="lg:w-1/4">
-            <div className="bg-white p-4 shadow-sm">
-              {cart.discount > 0 && (
-                <div className="mb-4 text-sm text-green-700 flex items-start gap-2">
-                   <div className="bg-green-100 p-1 rounded-full"><span className="text-xs">✓</span></div>
+            <div className="bg-white p-4 shadow-sm border border-gray-100 rounded-sm sticky top-6">
+              {cart.discount > 0 ? (
+                <div className="mb-4 text-sm text-green-800 bg-green-50 border border-green-200 p-3 rounded flex items-start gap-2">
+                   <div className="bg-green-200 text-green-900 p-0.5 px-1.5 rounded-full font-bold text-xs">✓</div>
                    <div>
-                      Your order qualifies for a <strong>{cart.applied_bundle_tier} bundle discount!</strong>
-                      <br/><span className="text-gray-500 text-xs">{cart.savings_reason}</span>
+                      <span className="font-bold text-green-900">{cart.applied_bundle_tier} applied!</span>
+                      <div className="text-gray-600 text-xs mt-0.5">{cart.savings_reason}</div>
                    </div>
+                </div>
+              ) : (
+                <div className="mb-4 text-xs text-gray-600 bg-gray-50 border border-gray-200 p-2.5 rounded">
+                  <span className="font-semibold text-gray-800">💡 Bundle Savings:</span> Add complementary bundle items from the recommendations to unlock instant discounts.
                 </div>
               )}
               
-              <div className="text-lg font-medium mb-4">
-                Subtotal ({totalItems} items): <span className="font-bold">£{cart.subtotal.toFixed(2)}</span>
+              <div className="text-base font-medium mb-4 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal ({totalItems} items):</span>
+                  <span className="font-bold">£{cart.subtotal.toFixed(2)}</span>
+                </div>
                 {cart.discount > 0 && (
-                  <div className="text-sm text-[#B12704] mt-1">
-                    Discount applied: -£{cart.discount.toFixed(2)}
+                  <div className="flex justify-between text-green-700 font-medium">
+                    <span>Bundle Discount:</span>
+                    <span>-£{cart.discount.toFixed(2)}</span>
                   </div>
                 )}
-                {cart.discount > 0 && (
-                  <div className="text-lg font-bold mt-1">
-                    Total: £{cart.final_total.toFixed(2)}
-                  </div>
-                )}
+                <div className="border-t pt-2 mt-2 flex justify-between text-lg font-bold text-gray-900">
+                  <span>Order Total:</span>
+                  <span className="text-[#B12704]">£{cart.final_total.toFixed(2)}</span>
+                </div>
               </div>
 
               <button 
                 onClick={() => navigate('/checkout')}
-                className="w-full bg-[#FFD814] hover:bg-[#F7CA00] border-[#FCD200] border rounded-full py-2 shadow-sm font-medium mb-4"
+                className="w-full bg-[#FFD814] hover:bg-[#F7CA00] border-[#FCD200] border rounded-full py-2.5 shadow-sm font-medium mb-3 cursor-pointer text-sm transition-colors"
               >
                 Proceed to Checkout
               </button>

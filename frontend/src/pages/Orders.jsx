@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
 import {
   Package, PackageCheck, Truck, RotateCcw, AlertCircle,
@@ -69,7 +68,7 @@ function OrderCard({ order, onReturn }) {
     if (!window.confirm(`Request a return for order ${orderId}?`)) return
     setReturning(true)
     try {
-      const res = await axios.post(`${API_URL}/cart/orders/${order.id}/return`, {
+      const res = await api.post(`/cart/orders/${order.id}/return`, {
         order_id: order.id,
         reason: 'Customer requested return',
       })
@@ -220,8 +219,7 @@ export default function Orders() {
     setLoading(true)
     setError('')
     try {
-      const params = user?.id ? { user_id: user.id } : {}
-      const res = await axios.get(`${API_URL}/cart/orders`, { params })
+      const res = await api.get('/cart/orders')
       setOrders(res.data)
     } catch (err) {
       setError('Failed to load orders. Please try again.')

@@ -94,7 +94,7 @@ def run_apriori(
 
     if save_output:
         if output_path is None:
-            output_dir = Path("outputs")
+            output_dir = Path(__file__).resolve().parent.parent / "outputs"
             output_dir.mkdir(parents=True, exist_ok=True)
             target = output_dir / "frequent_itemsets.csv"
         else:

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 
@@ -21,7 +20,7 @@ export default function Checkout() {
   const [checkoutError, setCheckoutError] = useState('')
 
   useEffect(() => {
-    axios.get(`${API_URL}/cart/`)
+    api.get('/cart/')
       .then(res => {
         setCart(res.data)
         if (res.data.items.length === 0) navigate('/cart')
@@ -37,7 +36,7 @@ export default function Checkout() {
     setCheckoutError('')
     try {
       const payload = { ...formData, user_id: user?.id || null }
-      const res = await axios.post(`${API_URL}/cart/checkout`, payload)
+      const res = await api.post('/cart/checkout', payload)
       setSuccess(res.data)
       setCartCount(0)
     } catch (err) {

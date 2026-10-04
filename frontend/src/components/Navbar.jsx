@@ -2,8 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Search, Menu, MapPin, LogOut, Package, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -26,7 +25,7 @@ export default function Navbar() {
   useEffect(() => {
     const fetchRelated = async () => {
       try {
-        const res = await axios.get(`${API_URL}/recommendations/related_products`)
+        const res = await api.get('/recommendations/related_products')
         setRelatedProducts(res.data)
       } catch (err) {
         console.error("Error fetching related products for dropdown", err)
@@ -38,7 +37,7 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault()
     const q = e.target.search.value
-    if (q) navigate(`/products?q=${q}`)
+    if (q) navigate(`/products?q=${encodeURIComponent(q)}`)
   }
 
   const handleLogout = () => {
@@ -87,7 +86,7 @@ export default function Navbar() {
             type="text"
             name="search"
             placeholder="Search Amazon-style..."
-            className="flex-1 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#f90] min-w-0"
+            className="flex-1 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#f90] min-w-0"
           />
           <button type="submit" className="bg-[#febd69] hover:bg-[#f3a847] px-4 py-2 rounded-r-md flex items-center justify-center">
             <Search className="text-gray-900 w-5 h-5" />

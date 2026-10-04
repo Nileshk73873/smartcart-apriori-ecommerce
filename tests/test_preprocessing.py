@@ -88,3 +88,40 @@ def test_clean_retail_data_removes_duplicates(sample_raw_data):
     assert stats["duplicates_removed"] == 3
     # Exactly 4 valid unique rows remain (3 from 536365 + 1 from 536384)
     assert len(cleaned) == 4
+
+
+def test_clean_retail_data_date_parsing():
+    df = pd.DataFrame({
+        "Invoice": ["536365", "536366"],
+        "StockCode": ["85123A", "71053"],
+        "Description": ["WHITE HANGING HEART", "LANTERN"],
+        "Quantity": [1, 2],
+        "InvoiceDate": ["01/12/2010 08:26", "15/01/2011 10:00"],
+        "Price": [2.55, 3.39],
+        "Customer ID": [17850.0, 17850.0],
+        "Country": ["United Kingdom", "United Kingdom"]
+    })
+    cleaned, _ = clean_retail_data(df, save_output=False)
+    assert pd.api.types.is_datetime64_any_dtype(cleaned["InvoiceDate"]), "InvoiceDate should be parsed as datetime"
+    # dayfirst=True: 01/12/2010 is Dec 1 2010, month=12, day=1
+    assert cleaned.iloc[0]["InvoiceDate"].month == 12
+    assert cleaned.iloc[0]["InvoiceDate"].day == 1
+
+
+def test_clean_retail_data_removes_non_products():
+    df = pd.DataFrame({
+        "Invoice": ["536365", "536366", "536367", "536368", "536369"],
+        "StockCode": ["85123A", "POST", "DOT", "22838", "M"],
+        "Description": ["WHITE HANGING HEART", "POSTAGE", "DOTCOM POSTAGE", "Bank Charges", "Manual"],
+        "Quantity": [1, 1, 1, 1, 1],
+        "InvoiceDate": ["2010-12-01 08:26:00"] * 5,
+        "Price": [2.55, 18.00, 10.00, 15.00, 5.00],
+        "Customer ID": [17850.0] * 5,
+        "Country": ["United Kingdom"] * 5
+    })
+    cleaned, stats = clean_retail_data(df, save_output=False)
+    # Only 85123A (WHITE HANGING HEART) is a valid product
+    assert len(cleaned) == 1
+    assert cleaned.iloc[0]["StockCode"] == "85123A"
+    assert stats["non_products_removed"] == 4
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Package, ShoppingCart, LayoutDashboard } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
 import AdminProducts from './admin/AdminProducts';
@@ -74,9 +74,9 @@ const AdminDashboard = () => {
     const fetchStats = async () => {
       try {
         const [usersRes, productsRes, ordersRes] = await Promise.all([
-          axios.get('http://127.0.0.1:8000/api/admin/users'),
-          axios.get('http://127.0.0.1:8000/api/products/'),
-          axios.get('http://127.0.0.1:8000/api/admin/orders')
+          api.get('/admin/users'),
+          api.get('/products/'),
+          api.get('/admin/orders')
         ]);
         setStats({
           users: usersRes.data.length,

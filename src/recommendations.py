@@ -83,24 +83,17 @@ def recommend_products(
 
     clean_name = product_name.strip()
 
-    # Search in antecedents: can be frozenset or string
-    # We search where clean_name matches any item in the antecedent
-    def contains_product(antecedent_val) -> bool:
+    # Match rules where antecedent is a subset of the viewed product (exact match for single product)
+    def is_exact_antecedent(antecedent_val) -> bool:
         if isinstance(antecedent_val, (set, frozenset)):
-            return any(clean_name.upper() == str(item).strip().upper() for item in antecedent_val)
+            items = {str(item).strip() for item in antecedent_val}
+            return items == {clean_name}
         if isinstance(antecedent_val, str):
-            parts = [p.strip().upper() for p in antecedent_val.split("+")]
-            return clean_name.upper() in parts
+            parts = {p.strip() for p in antecedent_val.split("+")}
+            return parts == {clean_name}
         return False
 
-    matching_rules = rules_df[rules_df["antecedents"].apply(contains_product)].copy()
-
-    if matching_rules.empty:
-        # Check if product is mentioned in antecedents_str as substring
-        if "antecedents_str" in rules_df.columns:
-            matching_rules = rules_df[
-                rules_df["antecedents_str"].str.upper().str.contains(clean_name.upper(), regex=False)
-            ].copy()
+    matching_rules = rules_df[rules_df["antecedents"].apply(is_exact_antecedent)].copy()
 
     if matching_rules.empty:
         return {
@@ -280,7 +273,7 @@ def generate_bundle_recommendations(
 
     if save_output:
         if output_path is None:
-            output_dir = Path("outputs")
+            output_dir = Path(__file__).resolve().parent.parent / "outputs"
             output_dir.mkdir(parents=True, exist_ok=True)
             target = output_dir / "bundle_recommendations.csv"
         else:

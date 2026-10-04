@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -11,7 +11,7 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/admin/orders');
+      const res = await api.get('/admin/orders');
       setOrders(res.data);
     } catch (err) {
       console.error(err);
@@ -22,7 +22,7 @@ const AdminOrders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await axios.put(`http://127.0.0.1:8000/api/admin/orders/${orderId}/status`, { status: newStatus });
+      await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
       // Update local state
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     } catch (err) {

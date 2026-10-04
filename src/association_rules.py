@@ -94,7 +94,7 @@ def generate_rules(
 
     if save_output:
         if output_path is None:
-            output_dir = Path("outputs")
+            output_dir = Path(__file__).resolve().parent.parent / "outputs"
             output_dir.mkdir(parents=True, exist_ok=True)
             target = output_dir / "association_rules.csv"
         else:
@@ -161,7 +161,7 @@ def filter_strong_rules(
 
     if save_output:
         if output_path is None:
-            output_dir = Path("outputs")
+            output_dir = Path(__file__).resolve().parent.parent / "outputs"
             output_dir.mkdir(parents=True, exist_ok=True)
             target = output_dir / "strong_association_rules.csv"
         else:

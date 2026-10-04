@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 
 const AuthContext = createContext(null)
 
@@ -17,7 +16,7 @@ export function AuthProvider({ children }) {
 
   const fetchCartCount = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/cart/count`)
+      const res = await api.get('/cart/count')
       setCartCount(res.data.count)
     } catch {
       setCartCount(0)

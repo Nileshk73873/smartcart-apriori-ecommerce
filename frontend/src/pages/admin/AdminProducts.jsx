@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 
 const AdminProducts = () => {
@@ -16,7 +16,7 @@ const AdminProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/products/?limit=100');
+      const res = await api.get('/products/?limit=100');
       setProducts(res.data);
     } catch (err) {
       console.error(err);
@@ -30,10 +30,10 @@ const AdminProducts = () => {
     try {
       if (currentProduct.id) {
         // Update
-        await axios.put(`http://127.0.0.1:8000/api/admin/products/${currentProduct.id}`, currentProduct);
+        await api.put(`/admin/products/${currentProduct.id}`, currentProduct);
       } else {
         // Create
-        await axios.post('http://127.0.0.1:8000/api/admin/products', currentProduct);
+        await api.post('/admin/products', currentProduct);
       }
       setIsEditing(false);
       setCurrentProduct({ stock_code: '', name: '', price: 0, description: '', image_url: '' });
@@ -47,7 +47,7 @@ const AdminProducts = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await axios.delete(`http://127.0.0.1:8000/api/admin/products/${id}`);
+        await api.delete(`/admin/products/${id}`);
         fetchProducts();
       } catch (err) {
         console.error('Error deleting product', err);
