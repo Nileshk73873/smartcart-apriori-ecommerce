@@ -22,6 +22,25 @@ def load_rules():
             RULES_CACHE = pd.DataFrame()
     return RULES_CACHE
 
+@router.get("/recommendations/related_products")
+def get_related_products(db: Session = Depends(get_db)):
+    rules_df = load_rules()
+    if rules_df.empty:
+        return []
+    
+    # Get unique product names from both antecedents and consequents
+    product_names = set()
+    for _, row in rules_df.iterrows():
+        ant = [c.strip() for c in str(row["antecedents"]).split("+")]
+        con = [c.strip() for c in str(row["consequents"]).split("+")]
+        product_names.update(ant)
+        product_names.update(con)
+    
+    # Fetch these products from the DB
+    products = db.query(models.Product).filter(models.Product.name.in_(product_names)).all()
+    return [{"id": p.id, "name": p.name} for p in products]
+
+
 @router.get("/recommendations/{product_id}")
 def get_product_recommendations(product_id: int, db: Session = Depends(get_db)):
     """

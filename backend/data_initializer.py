@@ -34,16 +34,22 @@ def init_db():
     
     products_to_insert = []
     
-    for _, row in latest_products.iterrows():
-        products_to_insert.append(
-            Product(
-                stock_code=str(row["StockCode"]),
-                name=str(row["Description"]),
-                price=float(row["Price"]),
-                description=f"Authentic {str(row['Description'])} from the UK.",
-                image_url=f"https://via.placeholder.com/300?text={str(row['Description']).replace(' ', '+')}"
+        import urllib.parse
+        for _, row in latest_products.iterrows():
+            name = str(row["Description"])
+            # Use the first 3 words of the product name for a clean placeholder image
+            short_name = '+'.join(name.split(' ')[:3])
+            keyword = urllib.parse.quote(short_name)
+            
+            products_to_insert.append(
+                Product(
+                    stock_code=str(row["StockCode"]),
+                    name=name,
+                    price=float(row["Price"]),
+                    description=f"Authentic {name} from the UK.",
+                    image_url=f"https://placehold.co/400x400/f3f4f6/111827?text={keyword}"
+                )
             )
-        )
         
     # Bulk save
     db.bulk_save_objects(products_to_insert)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pydantic import BaseModel
 from .database import get_db
 from . import models, schemas
@@ -90,7 +90,7 @@ def add_to_cart(item: schemas.CartItemAdd, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
         
     CART_SESSION[item.product_id] = CART_SESSION.get(item.product_id, 0) + item.quantity
-    return {"message": "Added to cart"}
+    return {"message": "Added to cart", "cart_count": sum(CART_SESSION.values())}
 
 @router.put("/update")
 def update_cart(item: schemas.CartItemUpdate):
@@ -99,18 +99,22 @@ def update_cart(item: schemas.CartItemUpdate):
             del CART_SESSION[item.product_id]
         else:
             CART_SESSION[item.product_id] = item.quantity
-    return {"message": "Cart updated"}
+    return {"message": "Cart updated", "cart_count": sum(CART_SESSION.values())}
 
 @router.delete("/remove/{product_id}")
 def remove_from_cart(product_id: int):
     if product_id in CART_SESSION:
         del CART_SESSION[product_id]
-    return {"message": "Removed from cart"}
+    return {"message": "Removed from cart", "cart_count": sum(CART_SESSION.values())}
 
 @router.post("/clear")
 def clear_cart():
     CART_SESSION.clear()
     return {"message": "Cart cleared"}
+
+@router.get("/count")
+def get_cart_count():
+    return {"count": sum(CART_SESSION.values())}
 
 @router.post("/checkout", response_model=schemas.OrderResponse)
 def checkout(order_details: schemas.OrderCreate, db: Session = Depends(get_db)):
@@ -127,7 +131,9 @@ def checkout(order_details: schemas.OrderCreate, db: Session = Depends(get_db)):
         postal_code=order_details.postal_code,
         subtotal=cart_summary["subtotal"],
         discount=cart_summary["discount"],
-        total=cart_summary["final_total"]
+        total=cart_summary["final_total"],
+        status="Processing",
+        user_id=order_details.user_id
     )
     db.add(order)
     db.commit()
@@ -146,3 +152,31 @@ def checkout(order_details: schemas.OrderCreate, db: Session = Depends(get_db)):
     CART_SESSION.clear()
     
     return {"id": order.id, "total": order.total, "message": "Order placed successfully!"}
+
+@router.get("/orders", response_model=List[schemas.FullOrderResponse])
+def get_orders(user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(models.Order)
+    if user_id is not None:
+        query = query.filter(models.Order.user_id == user_id)
+    orders = query.order_by(models.Order.id.desc()).all()
+    return orders
+
+@router.post("/orders/{order_id}/return")
+def request_return(order_id: int, return_req: schemas.ReturnRequest, db: Session = Depends(get_db)):
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status in ["Return Requested", "Returned"]:
+        raise HTTPException(status_code=400, detail="Return already requested for this order")
+    if order.status == "Processing":
+        raise HTTPException(status_code=400, detail="Cannot return an order that is still processing")
+    order.status = "Return Requested"
+    db.commit()
+    return {"message": "Return request submitted successfully", "order_id": order_id, "status": order.status}
+
+@router.get("/orders/{order_id}", response_model=schemas.FullOrderResponse)
+def get_order(order_id: int, db: Session = Depends(get_db)):
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
