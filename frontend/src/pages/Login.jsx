@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, ShoppingBag, AlertCircle } from 'lucide-react'
 
@@ -26,7 +25,7 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      const res = await axios.post(`${API_URL}/auth/login`, form)
+      const res = await api.post('/auth/login', form)
       login(res.data)
       navigate(from, { replace: true })
     } catch (err) {

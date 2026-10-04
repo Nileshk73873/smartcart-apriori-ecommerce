@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 
 export default function Home() {
   const [products, setProducts] = useState([])
 
   useEffect(() => {
     // Increase limit to list maximum products on home page
-    axios.get(`${API_URL}/products?limit=40`)
+    api.get('/products?limit=40')
       .then(res => setProducts(res.data))
       .catch(err => console.error(err))
   }, [])

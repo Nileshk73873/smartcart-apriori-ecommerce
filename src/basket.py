@@ -63,16 +63,13 @@ def create_basket_matrix(
     n_products = len(desc_labels)
 
     # Construct sparse CSR matrix (Invoice x Description)
-    data = np.ones(len(pairs), dtype=bool)
-    sparse_basket = csr_matrix((data, (inv_codes, desc_codes)), shape=(n_invoices, n_products))
+    dtype = bool if as_bool else np.uint8
+    data = np.ones(len(pairs), dtype=dtype)
+    sparse_basket = csr_matrix((data, (inv_codes, desc_codes)), shape=(n_invoices, n_products), dtype=dtype)
 
-    # Convert to dense DataFrame
-    dense_array = sparse_basket.toarray()
-    if not as_bool:
-        dense_array = dense_array.astype(np.uint8)
-
-    basket_df = pd.DataFrame(
-        dense_array,
+    # Keep as sparse DataFrame
+    basket_df = pd.DataFrame.sparse.from_spmatrix(
+        sparse_basket,
         index=inv_labels,
         columns=desc_labels
     )
@@ -80,7 +77,7 @@ def create_basket_matrix(
 
     mem_mb = basket_df.memory_usage().sum() / (1024 * 1024)
     logger.info(
-        f"Basket matrix created: {n_invoices:,} transactions x {n_products:,} products "
+        f"Sparse basket matrix created: {n_invoices:,} transactions x {n_products:,} products "
         f"({mem_mb:.2f} MB)."
     )
     return basket_df

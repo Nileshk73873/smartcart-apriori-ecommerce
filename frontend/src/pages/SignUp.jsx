@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react'
 
@@ -50,13 +49,13 @@ export default function SignUp() {
     setError('')
     try {
       // Create account
-      await axios.post(`${API_URL}/auth/signup`, {
+      await api.post('/auth/signup', {
         username: form.username,
         email: form.email || null,
         password: form.password,
       })
       // Auto login
-      const loginRes = await axios.post(`${API_URL}/auth/login`, {
+      const loginRes = await api.post('/auth/login', {
         username: form.username,
         password: form.password,
       })

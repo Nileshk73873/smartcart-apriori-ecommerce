@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
 
 export default function ProductDetail() {
@@ -16,29 +15,39 @@ export default function ProductDetail() {
   const [selectedBundle, setSelectedBundle] = useState([])
 
   useEffect(() => {
-    axios.get(`${API_URL}/products/${id}`)
-      .then(res => {
-        setProduct(res.data)
-        setSelectedBundle([res.data.id]) // default select main item
-        setAdded(false)
-      })
-      .catch(err => console.error(err))
+    let isMounted = true
 
-    axios.get(`${API_URL}/recommendations/${id}`)
-      .then(res => {
-        setRecommendations(res.data)
-        // Auto-select up to 2 recommendations for the bundle preview
-        const recIds = res.data.slice(0, 2).map(r => r.product.id)
-        setSelectedBundle(prev => [...prev, ...recIds])
+    Promise.all([
+      api.get(`/products/${id}`),
+      api.get(`/recommendations/${id}`)
+    ])
+      .then(([prodRes, recsRes]) => {
+        if (!isMounted) return
+        setProduct(prodRes.data)
+        setRecommendations(recsRes.data)
+        setAdded(false)
+
+        // Only preselect items that belong to a single rule (main item + top rule's consequent)
+        if (recsRes.data && recsRes.data.length > 0) {
+          setSelectedBundle([prodRes.data.id, recsRes.data[0].product.id])
+        } else {
+          setSelectedBundle([prodRes.data.id])
+        }
       })
-      .catch(err => console.error(err))
+      .catch((err) => {
+        if (isMounted) console.error(err)
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [id])
 
   const addToCart = async (productIds) => {
     try {
       // Add all selected products to cart
       const promises = productIds.map(pid => 
-        axios.post(`${API_URL}/cart/add`, { product_id: pid, quantity: 1 })
+        api.post('/cart/add', { product_id: pid, quantity: 1 })
       )
       await Promise.all(promises)
       setAdded(true)
@@ -51,7 +60,7 @@ export default function ProductDetail() {
 
   const buyNow = async () => {
     try {
-      await axios.post(`${API_URL}/cart/add`, { product_id: product.id, quantity: 1 })
+      await api.post('/cart/add', { product_id: product.id, quantity: 1 })
       navigate('/checkout')
     } catch (err) {
       console.error(err)

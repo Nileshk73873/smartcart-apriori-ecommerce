@@ -6,7 +6,6 @@ class UserCreate(BaseModel):
     username: str
     email: Optional[str] = None
     password: str
-    is_admin: Optional[bool] = False
 
 class UserResponse(BaseModel):
     id: int

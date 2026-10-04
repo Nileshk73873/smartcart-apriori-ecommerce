@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import axios from 'axios'
-import { API_URL } from '../config'
+import api from '../api'
 
 export default function ProductList() {
   const [products, setProducts] = useState([])
@@ -16,8 +15,8 @@ export default function ProductList() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const endpoint = query ? `/products/search?q=${query}` : '/products?limit=40'
-        const res = await axios.get(`${API_URL}${endpoint}`)
+        const endpoint = query ? `/products/search?q=${encodeURIComponent(query)}` : '/products?limit=40'
+        const res = await api.get(endpoint)
         // Add a deterministic fake rating to each product so filters have data to work with
         const withRatings = res.data.map(p => ({
           ...p,

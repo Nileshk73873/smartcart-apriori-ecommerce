@@ -29,3 +29,5 @@ prompt2.md
 # Uncomment if you don't want to push the 40MB csv
 # data/raw/online_retail_II.csv
 # data/processed/cleaned_retail.csv
+
+data/processed/cleaned_retail.csv

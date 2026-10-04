@@ -75,8 +75,23 @@ def clean_retail_data(
     rows_after_desc = len(cleaned)
     invalid_desc_removed = rows_after_price - rows_after_desc
 
-    # Step 6: Invoice formatting
+    # Step 5b: Drop non-product rows (StockCode or Description)
+    non_product_codes = {
+        "POST", "DOT", "M", "D", "C2", "BANK CHARGES", "AMAZONFEE",
+        "CRUK", "S", "B", "ADJUST", "MANUAL", "POSTAGE",
+        "DOTCOM POSTAGE", "CARRIAGE", "SAMPLES", "DISCOUNT"
+    }
+    stock_is_non_prod = cleaned["StockCode"].astype(str).str.strip().str.upper().isin(non_product_codes)
+    desc_is_non_prod = cleaned["Description"].astype(str).str.strip().str.upper().isin(non_product_codes)
+    is_non_prod = stock_is_non_prod | desc_is_non_prod
+    cleaned = cleaned[~is_non_prod].copy()
+    rows_after_non_prod = len(cleaned)
+    non_products_removed = rows_after_desc - rows_after_non_prod
+
+    # Step 6: Invoice formatting & Date parsing
     cleaned["Invoice"] = cleaned["Invoice"].astype(str).str.strip()
+    if "InvoiceDate" in cleaned.columns:
+        cleaned["InvoiceDate"] = pd.to_datetime(cleaned["InvoiceDate"], format="mixed", dayfirst=True)
 
     # Step 7: Calculate Total Line Amount for business reference
     cleaned["LineTotal"] = cleaned["Quantity"] * cleaned["Price"]
@@ -105,12 +120,13 @@ def clean_retail_data(
         "invalid_qty_removed": invalid_qty_removed,
         "invalid_price_removed": invalid_price_removed,
         "invalid_desc_removed": invalid_desc_removed,
+        "non_products_removed": non_products_removed,
         "duplicates_removed": duplicates_removed,
         "unique_invoices": int(cleaned["Invoice"].nunique()),
         "unique_products": int(cleaned["Description"].nunique()),
         "unique_countries": int(cleaned["Country"].nunique()),
-        "date_min": str(cleaned["InvoiceDate"].min()),
-        "date_max": str(cleaned["InvoiceDate"].max())
+        "date_min": str(cleaned["InvoiceDate"].min()) if "InvoiceDate" in cleaned.columns else "",
+        "date_max": str(cleaned["InvoiceDate"].max()) if "InvoiceDate" in cleaned.columns else ""
     }
 
     logger.info(
@@ -121,7 +137,7 @@ def clean_retail_data(
 
     if save_output:
         if output_path is None:
-            output_dir = Path("data/processed")
+            output_dir = Path(__file__).resolve().parent.parent / "data" / "processed"
             output_dir.mkdir(parents=True, exist_ok=True)
             target = output_dir / "cleaned_retail.csv"
         else:

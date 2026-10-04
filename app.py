@@ -418,11 +418,11 @@ with tab2:
 
     with col_p1:
         fig_top = plot_top_products_plotly(basket_stats["top_20_products"], n=15)
-        st.plotly_chart(fig_top, use_container_width=True)
+        st.plotly_chart(fig_top, width="stretch")
 
     with col_p2:
         fig_size = plot_basket_size_plotly(basket_stats["invoice_basket_sizes"], max_size=25)
-        st.plotly_chart(fig_size, use_container_width=True)
+        st.plotly_chart(fig_size, width="stretch")
 
     st.markdown("#### 📋 Top 20 Most Frequent Products in Catalog")
     st.dataframe(
@@ -430,7 +430,7 @@ with tab2:
             "Transaction_Count": "{:,}",
             "Support": "{:.2%}"
         }),
-        use_container_width=True
+        width="stretch"
     )
 
 
@@ -482,7 +482,7 @@ with tab3:
                 "support": "Support (Decimal)",
                 "support_pct": "Support (%)"
             }),
-            use_container_width=True,
+            width="stretch",
             height=450
         )
 
@@ -503,10 +503,10 @@ with tab4:
         rcol1, rcol2 = st.columns(2)
         with rcol1:
             fig_sc1 = plot_support_vs_confidence_plotly(strong_rules)
-            st.plotly_chart(fig_sc1, use_container_width=True)
+            st.plotly_chart(fig_sc1, width="stretch")
         with rcol2:
             fig_sc2 = plot_confidence_vs_lift_plotly(strong_rules)
-            st.plotly_chart(fig_sc2, use_container_width=True)
+            st.plotly_chart(fig_sc2, width="stretch")
 
         st.markdown("#### 📋 Filtered Association Rules Table")
         rule_search = st.text_input("Filter Rules by Product Keyword", placeholder="e.g. CAKESTAND, RETROSPOT...")
@@ -527,7 +527,7 @@ with tab4:
             "Conviction": display_rules["conviction"].round(2) if "conviction" in display_rules.columns else 0.0
         })
 
-        st.dataframe(format_rules, use_container_width=True, height=450)
+        st.dataframe(format_rules, width="stretch", height=450)
 
 
 # -----------------------------------------------------------------------------
@@ -607,7 +607,7 @@ with tab6:
         bcol1, bcol2 = st.columns([1, 1])
         with bcol1:
             fig_disc = plot_discount_distribution_plotly(bundles_df)
-            st.plotly_chart(fig_disc, use_container_width=True)
+            st.plotly_chart(fig_disc, width="stretch")
 
         with bcol2:
             st.markdown("#### 🏷️ Bundle Tier Summary")
@@ -618,7 +618,7 @@ with tab6:
             ).reset_index()
             tier_summary["Avg_Confidence"] = tier_summary["Avg_Confidence"].apply(lambda x: f"{x:.1%}")
             tier_summary["Avg_Lift"] = tier_summary["Avg_Lift"].round(2)
-            st.dataframe(tier_summary, use_container_width=True)
+            st.dataframe(tier_summary, width="stretch")
 
         st.markdown("---")
         st.markdown("#### 🛒 Interactive Bundle Price & Savings Simulator")
@@ -662,7 +662,7 @@ with tab6:
                 "suggested_discount_pct": "Discount (%)",
                 "discount_tier": "Tier"
             }),
-            use_container_width=True,
+            width="stretch",
             height=400
         )
 
@@ -706,10 +706,14 @@ with tab7:
         Therefore, claiming that Apriori optimizes discounts is methodologically incorrect. Our system strictly treats discount assignment as a **transparent business-rule heuristic** parameterized by Confidence and Lift.
         """)
 
+    no_cust_invoices = int(df_clean[df_clean["Customer ID"].isnull()]["Invoice"].nunique())
+    total_invoices_count = int(df_clean["Invoice"].nunique())
+    no_cust_pct = (no_cust_invoices / total_invoices_count * 100.0) if total_invoices_count > 0 else 0.0
+
     with st.expander("Q4: Why was each Invoice used as a transaction instead of Customer ID?"):
-        st.markdown("""
+        st.markdown(f"""
         **Answer:**  
-        Customer ID aggregates all purchases made by a user across multiple years and different shopping trips. A shopping basket represents products purchased **together in a single trip/checkout session**. Grouping by Customer ID would conflate items bought months apart into the same basket, distorting cross-sell affinity. Furthermore, 22.7% of transactions in the dataset lack a Customer ID (guest checkouts), but have valid Invoices.
+        Customer ID aggregates all purchases made by a user across multiple years and different shopping trips. A shopping basket represents products purchased **together in a single trip/checkout session**. Grouping by Customer ID would conflate items bought months apart into the same basket, distorting cross-sell affinity. Furthermore, {no_cust_pct:.1f}% of transactions in the dataset lack a Customer ID (guest checkouts), but have valid Invoices.
         """)
 
     with st.expander("Q5: What are the primary computational bottlenecks of Apriori and how were they optimized?"):
@@ -717,7 +721,7 @@ with tab7:
         **Answer:**  
         With 5,300+ unique products, a dense matrix is $40,077 \\times 5,357 \\approx 214\\text{ million}$ elements.  
         We optimized this using:
-        1. **SciPy CSR sparse matrix factorizations** for zero-copy memory efficiency.
+        1. **SciPy CSR sparse matrix factorizations and sparse pandas DataFrame representation (`pd.DataFrame.sparse.from_spmatrix`)** to maintain sparse memory structures without expanding into a dense 2D array.
         2. **Pre-filtering items below min_support threshold** before candidate combination generation, mathematically exploiting Apriori anti-monotonicity.
         3. **Streamlit session caching (`@st.cache_data`)** for instant UI reactivity.
         """)

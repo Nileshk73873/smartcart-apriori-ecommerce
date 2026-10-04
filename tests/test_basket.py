@@ -24,7 +24,7 @@ def test_basket_matrix_binary_values(sample_clean_df):
     # Check shape
     assert basket.shape == (3, 3)
     # Check that values are strictly boolean
-    assert basket.dtypes.apply(lambda dt: dt == bool).all()
+    assert basket.dtypes.apply(lambda dt: dt.kind == "b" or dt == bool or (hasattr(dt, "subtype") and dt.subtype == bool)).all()
     # Check that multiple purchases of Product A in INV1 become True (1)
     assert basket.loc["INV1", "Product A"] is True or basket.loc["INV1", "Product A"] == 1
     assert basket.loc["INV1", "Product B"] is True or basket.loc["INV1", "Product B"] == 1
